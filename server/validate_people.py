@@ -7,9 +7,38 @@ from datetime import datetime
 
 class SensorData:
     def __init__(self):
-        self.co2_data = 0
-        self.csi_data = 0
-        self.ultrasound_data = 0
+        # Fetch initial values from the database
+        self.co2_data, self.csi_data, self.ultrasound_data = self.fetch_initial_values_from_db()
+
+    def fetch_initial_values_from_db(self):
+        try:
+            connection = mysql.connector.connect(
+                host=db_config.db_host,
+                user=db_config.db_user,
+                password=db_config.db_password,
+                database=db_config.db_name
+            )
+
+            cursor = connection.cursor()
+
+            select_query = "SELECT co2_level, csi_data, ultrasonic_people_count FROM room_presence WHERE id = 1;"
+
+            cursor.execute(select_query)
+            result = cursor.fetchone()
+
+            if result:
+                return result
+            else:
+                return 0, 0, 0
+
+        except mysql.connector.Error as error:
+            print(f"Failed to fetch initial values from database: {error}")
+            return 0, 0, 0
+
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
 
     def update(self, topic, data):
         if topic == "radar/1/from":
